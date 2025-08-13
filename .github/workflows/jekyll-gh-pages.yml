@@ -1,0 +1,67 @@
+# .github/workflows/pages.yml
+name: Build & Deploy Docs (with imported READMEs)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Collect repo READMEs into docs/
+        run: |
+          set -euo pipefail
+          mkdir -p docs/imported/{root,lib,service}
+
+          add_page () {
+            SRC="$1"; DST="$2"; TITLE="$3"
+            mkdir -p "$(dirname "$DST")"
+            {
+              echo '---'
+              echo "title: ${TITLE}"
+              echo '---'
+              echo
+              cat "$SRC"
+            } > "$DST"
+          }
+
+          add_page "README.md"                "docs/imported/root/index.md"     "Project README"
+          add_page "src/lib/README.md"        "docs/imported/lib/index.md"      "Library README"
+          add_page "src/service/README.md"    "docs/imported/service/index.md"  "Service README"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build Jekyll site from ./docs
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
