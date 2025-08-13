@@ -1,0 +1,8 @@
+title: "Mini Project Docs"
+description: "Test publishing docs from /docs alongside code."
+remote_theme: just-the-docs/just-the-docs
+search_enabled: true
+aux_links:
+  "View on GitHub": "{{ site.github.repository_url }}"
+plugins:
+  - jekyll-seo-tag
